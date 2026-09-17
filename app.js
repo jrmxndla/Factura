@@ -21,8 +21,9 @@
    ================================================================= */
 
 /* ============ 1. VERSION, ICÔNES, IMAGES ============ */
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.5.0';
 const INSTAGRAM = 'https://www.instagram.com/atelier.nardella/';
+const SHARE_URL = 'https://jrmxndla.github.io/Factura/';
 const ASSETS = {
   logo:'assets/logo-factura.png',
   coffee:'assets/pigeon-coffee.png', laptop:'assets/pigeon-laptop.png',
@@ -30,7 +31,48 @@ const ASSETS = {
   paint:'assets/pigeon-paint.png',  camera:'assets/pigeon-camera.png'
 };
 const paintImgs = () => $$('[data-img]').forEach(el => { el.src = ASSETS[el.dataset.img] || ASSETS.logo; });
-const pigeon = (name, cls) => '<img class="pigeon ' + (cls || 'pigeon-step') + '" data-img="' + name + '" alt="">';
+
+/* Les pupilles ont été effacées des images : on les repose en HTML pour
+   qu'elles suivent le doigt ou la souris. Coordonnées en fraction de la
+   largeur de l'image : [x, y, rayon]. */
+const EYES = {
+  coffee:[[0.5286, 0.4134, 0.0155], [0.6393, 0.3867, 0.0143]],
+  laptop:[[0.4298, 0.3774, 0.0179], [0.6690, 0.3689, 0.0190]],
+  plant: [[0.5393, 0.5962, 0.0190], [0.6583, 0.5788, 0.0179]],
+  zen:   [[0.5357, 0.4549, 0.0167], [0.6440, 0.4531, 0.0167]],
+  paint: [[0.4667, 0.5133, 0.0167], [0.5702, 0.4929, 0.0155]],
+  camera:[[0.5107, 0.5956, 0.0202], [0.6214, 0.5700, 0.0179]]
+};
+const pigeon = (name, cls) => '<span class="pigeon-wrap ' + (cls || 'pigeon-step') + '">' +
+  '<img class="pigeon" data-img="' + name + '" alt="">' +
+  (EYES[name] || []).map(e => '<i class="eye" style="left:' + (e[0] * 100).toFixed(2) + '%;top:' +
+    (e[1] * 100).toFixed(2) + '%;width:' + (e[2] * 200).toFixed(2) + '%"></i>').join('') + '</span>';
+
+/* Regard : les pupilles se décalent vers le pointeur, et rêvassent au repos. */
+let eyeIdle = 0, eyeRaf = 0;
+function lookAt(cx, cy){
+  $$('.eye').forEach(el => {
+    const r = el.getBoundingClientRect();
+    if(!r.width) return;
+    const dx = cx - (r.left + r.width / 2), dy = cy - (r.top + r.height / 2);
+    const d = Math.hypot(dx, dy) || 1, k = Math.min(r.width * 0.5, d / 9);
+    el.style.setProperty('--ex', (dx / d * k).toFixed(1) + 'px');
+    el.style.setProperty('--ey', (dy / d * k).toFixed(1) + 'px');
+  });
+}
+function initEyes(){
+  const track = e => {
+    eyeIdle = Date.now();
+    if(eyeRaf) return;
+    eyeRaf = requestAnimationFrame(() => { eyeRaf = 0; lookAt(e.clientX, e.clientY); });
+  };
+  document.addEventListener('pointermove', track, { passive:true });
+  document.addEventListener('pointerdown', track, { passive:true });
+  setInterval(() => {
+    if(Date.now() - eyeIdle < 3500) return;
+    lookAt(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * (0.2 + Math.random() * 0.6));
+  }, 2400);
+}
 
 /* Icônes : tracés dessinés à la main, rendus en lignes bleues (voir .ico en CSS) */
 const ICON_PATHS = {
@@ -85,230 +127,258 @@ const ICON_PATHS = {
   globe:'<circle cx="32" cy="32" r="22"/><path d="M10 32c14.5 1.4 29 1.4 44 0"/><path d="M32 10c9 13 9 31 0 44-9-13-9-31 0-44Z"/>',
   code:'<path d="m21 20-13 12 13 12"/><path d="m43 20 13 12-13 12"/><path d="m37 13-10 38"/>',
   cap:'<path d="M32 12 6 23l26 11 26-11L32 12Z"/><path d="M16 29v13c0 4 7 8 16 8s16-4 16-8V29"/><path d="M54 25v14"/>',
+  share:'<circle cx="49" cy="15" r="8"/><circle cx="15" cy="32" r="8"/><circle cx="49" cy="49" r="8"/><path d="m22 28 20-9"/><path d="m22 36 20 9"/>',
+  x:'<path d="M13 12 51 52"/><path d="M51 12 13 52"/>',
+  whatsapp:'<path d="M32 8c13.3 0 24 10.7 24 24S45.3 56 32 56c-4 0-7.8-1-11.1-2.7L8 56l2.9-12.4A23.8 23.8 0 0 1 8 32C8 18.7 18.7 8 32 8Z"/><path d="M24 22c1.5-.4 2.6-.2 3.2 1l2 4.2c.4.9.2 1.6-.5 2.3l-1.2 1.2c-.6.6-.7 1.2-.3 2 1.6 3.2 4 5.6 7.2 7.2.8.4 1.4.3 2-.3l1.2-1.2c.7-.7 1.4-.9 2.3-.5l4.2 2c1.2.6 1.4 1.7 1 3.2-.5 2-2.4 3.4-4.8 3.4-8.8 0-19-10.2-19-19 0-2.4 1.4-4.3 3.4-4.8Z"/>',
+  facebook:'<path d="M11.5 18c0-3.6 2.9-6.5 6.5-6.5h28c3.6 0 6.5 2.9 6.5 6.5v28c0 3.6-2.9 6.5-6.5 6.5h-28c-3.6 0-6.5-2.9-6.5-6.5V18Z"/><path d="M40 22h-4.5c-2.5 0-4.5 2-4.5 4.5V53"/><path d="M25 33h12"/>',
+  linkedin:'<path d="M11.5 18c0-3.6 2.9-6.5 6.5-6.5h28c3.6 0 6.5 2.9 6.5 6.5v28c0 3.6-2.9 6.5-6.5 6.5h-28c-3.6 0-6.5-2.9-6.5-6.5V18Z"/><path d="M22 28v16"/><circle class="fill" cx="22" cy="21" r="2.8"/><path d="M32 44V30c3-1.5 11-2 11 6v8"/>',
+  link:'<path d="M27 37 37 27"/><path d="m31 21 6-6a9.9 9.9 0 0 1 14 14l-6 6"/><path d="m33 43-6 6a9.9 9.9 0 0 1-14-14l6-6"/>',
   instagram:'<path d="M11.5 22c0-6 4.5-10.5 10.5-10.5h20c6 0 10.5 4.5 10.5 10.5v20c0 6-4.5 10.5-10.5 10.5H22c-6 0-10.5-4.5-10.5-10.5V22Z"/><circle cx="32" cy="32" r="10"/><circle class="fill" cx="45" cy="19" r="2.8"/>'
 };
 const icon = (name, cls) => '<span class="ico ' + (cls || '') + '"><svg viewBox="0 0 64 64" aria-hidden="true">' +
   (ICON_PATHS[name] || ICON_PATHS.info) + '</svg></span>';
 
-/* ============ 2. TEXTES DE L'INTERFACE ============ */
+/* ============ 2. TEXTES DE L'INTERFACE ============
+   Ton : on tutoie, on va droit au but, on donne des exemples concrets.
+   Exception : tout ce qui touche au droit, aux impôts ou aux mentions
+   obligatoires reste impersonnel et sobre (voir NOTES et creditsHTML).   */
 const UI = {
   fr:{
-    back:'Retour', home:'Accueil', save:'Enregistrer', saved:'Enregistré', close:'Fermer', cancel:'Annuler',
-    continue:'Continuer', edit:'Modifier', duplicate:'Dupliquer', del:'Supprimer', preview:'Aperçu',
-    customize:'Personnaliser', newInvoice:'Nouvelle facture', optional:'facultatif',
-    navSettings:'Mes informations', navList:'Mes factures', navDevis:'Demande de devis',
-    homeSub:'Créez et gérez vos factures simplement.',
-    start:'Commencer', options:'Options', credits:'Crédits',
-    menuTitle:'Que voulez-vous faire ?',
-    optTitle:'Options', optLang:'Langue de l\'interface', optTheme:'Couleurs de l\'interface',
-    optLight:'Clair', optInvert:'Inversé',
-    optThemeH:'Le thème inversé n\'affecte que l\'application : la facture imprimée reste sur papier clair.',
-    creditsTitle:'Crédits & mentions légales',
-    a1:'Créer une facture', a1d:'Quelques questions simples, et c\'est prêt.',
-    a2:'Modifier une facture', a2d:'Reprendre, dupliquer ou importer une facture.',
-    a3:'Demande de devis', a3d:'Recueillir une demande client et la transformer en facture.',
-    s1:'Vous', s2:'Client', s3:'Facture', s4:'Prestations', s5:'Design', s6:'Terminé',
+    back:'Retour', home:'Accueil', save:'Enregistrer', saved:'C\'est enregistré', close:'Fermer', cancel:'Annuler',
+    continue:'Suivant', edit:'Modifier', duplicate:'Dupliquer', del:'Supprimer', preview:'Aperçu',
+    customize:'Changer le look', newInvoice:'Nouvelle facture', optional:'facultatif',
+    navSettings:'Mes infos', navList:'Mes factures', navDevis:'Demande de devis',
+    homeSub:'Fais tes factures en cinq minutes. Sans jargon, sans compte, sans galère.',
+    start:'C\'est parti', options:'Réglages', credits:'Infos', share:'Partager',
+    menuTitle:'Tu veux faire quoi ?',
+    optTitle:'Réglages', optLang:'Langue de l\'appli', optTheme:'Couleurs de l\'appli',
+    optLight:'Clair', optInvert:'Nuit',
+    optThemeH:'Le mode nuit ne change que l\'application. La facture, elle, reste sur fond clair : c\'est un document à imprimer.',
+    creditsTitle:'Infos & mentions légales',
+    a1:'Faire une facture', a1d:'Cinq questions simples, et le PDF sort tout seul.',
+    a2:'Reprendre une facture', a2d:'La modifier, la dupliquer, ou en importer une.',
+    a3:'Demande de devis', a3d:'Le formulaire que tes clients remplissent pour toi.',
+    s1:'Toi', s2:'Client', s3:'Facture', s4:'Boulot', s5:'Look', s6:'Fini',
     stepOf:(n) => 'Étape ' + n + ' sur ' + STEPS.length,
-    q6:'À quoi doit-elle ressembler ?',
-    h6:'Faites glisser pour comparer les modèles, puis choisissez vos couleurs. L\'aperçu se met à jour tout de suite.',
-    swipeHint:'Faites glisser →', chosen:'Modèle choisi',
-    q1:'Qui êtes-vous ?', h1:'Ces informations sont enregistrées : vous ne les saisirez qu\'une seule fois.',
-    q2:'À qui envoyez-vous cette facture ?', h2:'Choisissez le type de client : les informations demandées s\'adaptent.',
-    q3:'La facture', h3:'Le numéro est proposé automatiquement et doit suivre une suite continue.',
-    q4:'Qu\'avez-vous réalisé ?', h4:'Écrivez librement ce que vous avez fait, puis la quantité et le prix.',
-    q5:'Terminé !', h5:'Une dernière vérification, puis vous pouvez générer le PDF.',
-    fLogo:'Votre logo', fLogoH:'Il apparaît directement sur la facture.', fChoose:'Choisir une image', fRemove:'Retirer',
-    fName:'Nom de l\'entreprise', fManager:'Nom et prénom du responsable', fLegal:'Forme juridique',
+    q1:'C\'est qui, toi ?', h1:'On te le demande une seule fois. Après, c\'est gardé pour toutes tes factures.',
+    q2:'Et le client, c\'est qui ?', h2:'Dis-nous si c\'est une personne ou une boîte : les questions s\'adaptent.',
+    q3:'Les infos de la facture', h3:'Le numéro est déjà rempli. Il doit juste se suivre : 001, 002, 003…',
+    q4:'T\'as fait quoi ?', h4:'Écris-le comme tu le dirais à quelqu\'un. Ex. : « Ménage appartement 3 pièces », « Logo + carte de visite ».',
+    q5:'C\'est tout bon !', h5:'On vérifie vite fait, et tu récupères ton PDF.',
+    q6:'Elle ressemble à quoi ?', h6:'Fais glisser pour comparer. Ce que tu vois, c\'est ta vraie facture en petit.',
+    swipeHint:'Fais glisser →', chosen:'Modèle choisi',
+    fLogo:'Ton logo', fLogoH:'Il se pose direct sur la facture. Pas de logo ? Ton nom fera le job.',
+    fChoose:'Choisir une image', fRemove:'Enlever',
+    fName:'Nom de ton entreprise', fManager:'Ton nom et prénom', fLegal:'Statut',
     fCapital:'Capital social (€)', fAddress:'Adresse', fZip:'Code postal', fCity:'Ville', fCountry:'Pays',
-    fCountryOther:'Nom du pays', fPhone:'Téléphone', fEmail:'E-mail',
-    fSiret:'SIRET', fRci:'N° RCI', fNis:'N° NIS (facultatif)', fVatNo:'N° TVA intracommunautaire',
-    vatTitle:'Votre situation TVA', vatNo:'Je ne facture pas la TVA', vatNoD:'Franchise en base — art. 293 B du CGI',
-    vatYes:'Je facture la TVA', vatYesD:'Entreprise assujettie',
-    bank:'Coordonnées bancaires (facultatif)', extra:'Mentions complémentaires (facultatif)',
-    fInsurance:'Assurance professionnelle', fInsuranceArea:'Couverture géographique',
-    fCga:'Je suis membre d\'un centre de gestion ou d\'une association agréée',
-    typeP:'Particulier', typePd:'Une personne, chez elle', typeC:'Entreprise', typeCd:'Société, syndic, agence…',
-    clNameP:'Nom et prénom du client', clNameC:'Nom de l\'entreprise', clContact:'Nom du contact',
-    clSiren:'SIREN', clVat:'N° TVA intracommunautaire',
-    invNumber:'Numéro de facture', invLang:'Langue du document', invIssue:'Date d\'émission',
-    invService:'Date de prestation', invDue:'Date d\'échéance', onReceipt:'À réception', days:'jours',
-    invObject:'Objet / référence de la facture',
-    presta:'Prestation', qty:'Quantité', unit:'Prix unitaire', vat:'TVA', total:'Total',
-    whichRate:'Quel taux ?', addItem:'Ajouter une prestation', detailPh:'Précision (facultatif) : pièces, durée, adresse…',
-    prestaPh:'Ex. Nettoyage fin de chantier', totalHt:'Total HT', totalTtc:'Total TTC', toPay:'Total à payer',
-    verif:'Vérification', payment:'Paiement', payMethod:'Mode de paiement',
-    payTerms:'Conditions particulières (facultatif)', penalty:'Taux des pénalités de retard',
-    message:'Message pour le client (facultatif)', worksAddr:'Adresse du logement concerné par les travaux',
-    yourInvoice:'Votre facture', genPdf:'Générer le PDF', print:'Imprimer', saveFile:'Sauvegarder le fichier',
-    noVatLine:'TVA non applicable — art. 293 B du CGI',
-    listEmpty:'Aucune facture', listEmptyD:'Vos factures enregistrées apparaîtront ici.',
-    listFirst:'Créer ma première facture',
-    thNo:'N°', thClient:'Client', thDate:'Date', thAmount:'Montant', thStatus:'Statut',
+    fCountryOther:'Lequel ?', fPhone:'Téléphone', fEmail:'E-mail',
+    fSiret:'SIRET (14 chiffres)', fRci:'N° RCI', fNis:'N° NIS (si tu l\'as)', fVatNo:'N° de TVA (FR…)',
+    vatTitle:'La TVA, tu la factures ?', vatNo:'Non, jamais', vatNoD:'Franchise en base — le cas de la plupart des micro-entreprises',
+    vatYes:'Oui', vatYesD:'Entreprise assujettie à la TVA',
+    bank:'Coordonnées bancaires (si tu veux être payé par virement)',
+    extra:'Trucs en plus (facultatif)',
+    fInsurance:'Assurance pro', fInsuranceArea:'Zone couverte',
+    fCga:'Je suis dans un centre de gestion agréé',
+    typeP:'Un particulier', typePd:'Une personne, chez elle', typeC:'Une entreprise', typeCd:'Société, agence, syndic…',
+    clNameP:'Son nom et prénom', clNameC:'Le nom de la boîte', clContact:'La personne à qui tu écris',
+    clSiren:'SIREN', clVat:'N° de TVA',
+    invNumber:'Numéro de facture', invLang:'Langue du document', invIssue:'Date d\'aujourd\'hui',
+    invService:'Date du boulot', invDue:'À payer avant le', onReceipt:'Tout de suite', days:'jours',
+    invObject:'C\'est pour quoi ?',
+    presta:'Ce que tu as fait', qty:'Combien', unit:'Prix à l\'unité', vat:'TVA', total:'Total',
+    whichRate:'Aide-moi', addItem:'Ajouter une ligne',
+    detailPh:'Un détail si tu veux : pièces, durée, adresse…',
+    prestaPh:'Ex. Ménage appartement 3 pièces',
+    totalHt:'Total hors taxes', totalTtc:'Total à payer (TVA comprise)', toPay:'Total à payer',
+    verif:'On vérifie', payment:'Le paiement', payMethod:'Il te paie comment ?',
+    payTerms:'Un mot sur le paiement (facultatif)', penalty:'Pénalités en cas de retard',
+    message:'Un petit mot pour lui (facultatif)', worksAddr:'Adresse du logement des travaux',
+    yourInvoice:'Ta facture', genPdf:'Créer le PDF', print:'Imprimer', saveFile:'Sauvegarder le fichier',
+    noVatLine:'Pas de TVA — art. 293 B du CGI',
+    listEmpty:'Rien ici pour l\'instant', listEmptyD:'Tes factures apparaîtront à cet endroit.',
+    listFirst:'Faire ma première facture',
+    thNo:'N°', thClient:'Client', thDate:'Date', thAmount:'Montant', thStatus:'Où ça en est',
     stDraft:'Brouillon', stSent:'Envoyée', stPaid:'Payée',
-    dataTitle:'Données enregistrées sur cet appareil',
-    dataText:'Tout est stocké dans votre navigateur : rien n\'est envoyé sur Internet. Exportez régulièrement pour conserver une copie.',
-    exportAll:'Exporter toutes mes données', eraseAll:'Tout effacer',
-    openTitle:'Modifier une facture', openHelp:'Trois façons de reprendre une facture existante.',
-    open1:'Une facture déjà créée ici', open1d:'Le plus simple : elle se rouvre avec toutes ses informations.',
+    dataTitle:'Tes données, sur ton appareil',
+    dataText:'Tout reste dans ton navigateur : rien ne part sur Internet, personne d\'autre ne peut le lire. Revers de la médaille : si tu vides ton navigateur, tout disparaît. Exporte de temps en temps.',
+    exportAll:'Tout exporter', eraseAll:'Tout effacer',
+    openTitle:'Reprendre une facture', openHelp:'Trois façons de remettre la main dessus.',
+    open1:'Une facture faite ici', open1d:'La plus simple : elle se rouvre telle quelle.',
     open1b:'Voir mes factures',
-    open2:'Un fichier enregistré depuis l\'application', open2d:'Le fichier .json créé par « Sauvegarder le fichier », ou une demande de devis reçue d\'un client.',
-    open2b:'Importer un fichier .json',
-    open3:'Une facture reçue en PDF ou en photo', open3d:'Le document s\'affiche à côté du formulaire ; le texte des PDF est analysé pour pré-remplir les champs.',
-    dropHere:'Déposez votre facture ici', dropTypes:'PDF, JPG, JPEG ou PNG',
-    importGo:'Continuer et compléter la facture',
-    importNoInvent:'Aucune donnée manquante n\'est inventée : les champs non détectés restent vides.',
+    open2:'Un fichier .json', open2d:'Celui du bouton « Sauvegarder le fichier », ou une demande de devis reçue d\'un client.',
+    open2b:'Choisir un fichier',
+    open3:'Une facture en PDF ou en photo', open3d:'Le document s\'affiche à côté du formulaire. Si le PDF contient du texte, on essaie de le lire pour te mâcher le travail.',
+    dropHere:'Dépose ta facture ici', dropTypes:'PDF, JPG, JPEG ou PNG',
+    importGo:'Continuer et compléter',
+    importNoInvent:'On n\'invente rien : ce qui n\'a pas été trouvé reste vide.',
     dTitle:'Demande de devis',
-    dHelp:'À remplir par le client, ou avec lui. La demande est ensuite téléchargée, imprimée ou envoyée par e-mail — sans aucun compte à créer.',
-    dRef:'Référence', dId:'N° de demande', dDate:'Date', dYou:'Vos coordonnées', dName:'Nom et prénom',
-    dPlace:'Lieu de l\'intervention', dKind:'Type de lieu',
-    dServices:'Prestations souhaitées',
-    dPick:'Choisissez une ou plusieurs prestations : les questions suivantes s\'adaptent.',
-    dNoPick:'Sélectionnez au moins une prestation pour continuer.',
-    dAbout:'Quelques précisions',
+    dHelp:'Envoie ce formulaire à tes clients, ou remplis-le avec eux au téléphone. Aucun compte à créer, ni pour toi ni pour eux.',
+    dRef:'Référence', dId:'N° de demande', dDate:'Date', dYou:'Tes coordonnées', dName:'Nom et prénom',
+    dPlace:'Ça se passe où ?', dKind:'C\'est quel genre d\'endroit ?',
+    dServices:'Il te faut quoi ?',
+    dPick:'Coche tout ce qui te concerne. Les questions d\'après s\'adaptent à tes choix.',
+    dNoPick:'Coche au moins une prestation là-haut, et les bonnes questions apparaîtront.',
+    dAbout:'Dis-nous en un peu plus',
     dOld2Help:'Cette question sert uniquement à savoir si un taux de TVA réduit peut s\'appliquer aux travaux.',
-    dRemote:'Prestation à distance : aucune adresse d\'intervention n\'est demandée.',
-    dSurface:'Surface approximative (m²)', dRooms:'Nombre de pièces',
-    dFreq:'Fréquence souhaitée', dWhen:'Date souhaitée', dNotes:'Précisions', dNotesPh:'Décrivez ce dont vous avez besoin…',
-    dPhotos:'Photos (facultatif)', dPhotosH:'Elles sont réduites et enregistrées dans le fichier de la demande. Elles ne peuvent pas être jointes à un e-mail automatique.',
-    dAddPhotos:'Ajouter des photos', dSend:'Envoyer ma demande', dTo:'Adresse e-mail du destinataire',
-    dMail:'Ouvrir mon logiciel de messagerie', dJson:'Télécharger (.json)', dCopy:'Copier le texte',
-    dTicket:'Voir la fiche', dToInvoice:'Transformer en facture',
-    dLocal:'Rien n\'est envoyé automatiquement sur Internet : la demande est produite sur votre appareil, puis transmise par le moyen de votre choix.',
-    famHome:'Entretien & ménage', famBuild:'Bâtiment & travaux',
-    famCreative:'Création & communication', famPro:'Conseil & services',
-    kindFlat:'Appartement', kindHouse:'Maison', kindOffice:'Local professionnel', kindOther:'Autre',
+    dRemote:'C\'est du travail à distance : pas besoin d\'adresse.',
+    dSurface:'Surface en m²', dRooms:'Nombre de pièces',
+    dFreq:'C\'est pour quand', dWhen:'Date qui t\'arrangerait', dNotes:'Autre chose ?',
+    dNotesPh:'Raconte : ce que tu veux, ce qui te bloque, ce que tu as déjà…',
+    dPhotos:'Des photos ? (facultatif)',
+    dPhotosH:'Une photo vaut mieux qu\'un long discours. Elles sont réduites et rangées dans le fichier de la demande — elles ne partent pas dans l\'e-mail automatique.',
+    dAddPhotos:'Ajouter des photos', dSend:'Envoyer ta demande', dTo:'À quelle adresse e-mail ?',
+    dMail:'Ouvrir ma messagerie', dJson:'Télécharger le fichier', dCopy:'Copier le texte',
+    dTicket:'Voir la fiche', dToInvoice:'En faire une facture',
+    dLocal:'Rien ne part tout seul sur Internet. La demande est fabriquée sur ton appareil, et c\'est toi qui l\'envoies comme tu veux.',
+    famHome:'Ménage & entretien', famBuild:'Bâtiment & travaux',
+    famCreative:'Création & com', famPro:'Conseil & services',
+    kindFlat:'Un appartement', kindHouse:'Une maison', kindOffice:'Un local pro', kindOther:'Autre chose',
     freqOnce:'Une seule fois', freqWeek:'Chaque semaine', freqBi:'Deux fois par mois', freqMonth:'Chaque mois',
-    ticketTitle:'Fiche de demande', ticketHelp:'Vous pouvez l\'enregistrer en PDF ou l\'imprimer.',
+    ticketTitle:'La fiche de demande', ticketHelp:'Tu peux l\'imprimer ou l\'enregistrer en PDF.',
     savePdf:'Enregistrer en PDF',
-    missTitle:'Il manque quelques informations',
-    missHelp:'Vous pouvez générer le PDF quand même, mais la facture ne serait pas complète.',
-    missFix:'Compléter', missAnyway:'Générer quand même',
-    eraseTitle:'Tout effacer ?', eraseHelp:'Vos informations et vos factures enregistrées sur cet appareil seront définitivement supprimées.',
-    eraseYes:'Oui, tout effacer',
-    vatHelpTitle:'Quel taux de TVA ?',
-    vatHelpIntro:'Répondez simplement. L\'application vous <b>propose</b> un taux : vous restez libre de le modifier.',
-    vatConds:'Conditions à confirmer', vatProposed:'Taux proposé', vatApply:'Appliquer',
-    vatDisclaimer:'Cette proposition ne remplace pas l\'avis de votre comptable ou de l\'administration fiscale.',
-    custTitle:'Personnaliser ma facture', custHelp:'Les changements apparaissent immédiatement dans l\'aperçu.',
-    custPrimary:'Couleur principale', custSecondary:'Couleur secondaire', custLight:'Clarté',
-    custPalettes:'Palettes', custStyle:'Style de facture', custLogo:'Position du logo',
+    missTitle:'Il manque deux-trois trucs',
+    missHelp:'Tu peux sortir le PDF quand même, mais la facture ne serait pas complète.',
+    missFix:'Je complète', missAnyway:'Tant pis, j\'y vais',
+    eraseTitle:'On efface tout ?', eraseHelp:'Tes infos et tes factures enregistrées sur cet appareil partent définitivement. Pas de retour en arrière.',
+    eraseYes:'Oui, efface tout',
+    vatHelpTitle:'Quelle TVA je mets ?',
+    vatHelpIntro:'Réponds tranquillement. L\'appli te <b>propose</b> un taux, tu restes libre de le changer.',
+    vatConds:'Coche ce qui est vrai', vatProposed:'Taux proposé', vatApply:'Je prends',
+    vatDisclaimer:'Cette proposition ne remplace pas l\'avis d\'un comptable ou de l\'administration fiscale.',
+    custTitle:'Changer le look', custHelp:'Tout se met à jour en direct.',
+    custPrimary:'Couleur principale', custSecondary:'Couleur secondaire', custLight:'Plus clair / plus foncé',
+    custPalettes:'Palettes toutes faites', custStyle:'Modèle', custLogo:'Le logo, tu le mets où ?',
     styleClean:'Épuré', styleBand:'Bandeau', styleLine:'Ligne',
-    posLeft:'Gauche', posCenter:'Centré', posRight:'Droite',
-    footLocal:'Application 100 % locale — vos données restent sur votre appareil.',
-    tSaved:'Facture enregistrée', tInfoSaved:'Informations enregistrées', tCopied:'Informations copiées',
-    tLogo:'Logo ajouté', tDeleted:'Facture supprimée', tImported:'Fichier importé',
-    tDevisDl:'Demande téléchargée', tNeedMail:'Indiquez l\'adresse e-mail du destinataire',
-    tConverted:'Demande convertie — complétez les prix', tOpened:'Facture ouverte', tDuplicated:'Facture dupliquée'
+    posLeft:'À gauche', posCenter:'Au milieu', posRight:'À droite',
+    footLocal:'Tout reste sur ton appareil. Rien n\'est envoyé nulle part.',
+    shareTitle:'Faire tourner Factura',
+    shareHelp:'C\'est gratuit et ça le restera. Si ça t\'a servi, passe le lien.',
+    shareNative:'Partager…', shareCopy:'Copier le lien',
+    shareInsta:'Instagram', shareInstaH:'Instagram ne permet pas d\'ouvrir un partage depuis un site. Copie le lien, il file dans ta story.',
+    tSaved:'Facture enregistrée', tInfoSaved:'Tes infos sont enregistrées', tCopied:'Copié !',
+    tLogo:'Joli logo', tDeleted:'Facture supprimée', tImported:'Fichier importé',
+    tDevisDl:'Demande téléchargée', tNeedMail:'Il me faut une adresse e-mail',
+    tConverted:'Hop, c\'est une facture. Reste les prix.', tOpened:'Facture ouverte', tDuplicated:'Facture dupliquée'
   },
   en:{
     back:'Back', home:'Home', save:'Save', saved:'Saved', close:'Close', cancel:'Cancel',
-    continue:'Continue', edit:'Edit', duplicate:'Duplicate', del:'Delete', preview:'Preview',
-    customize:'Customise', newInvoice:'New invoice', optional:'optional',
+    continue:'Next', edit:'Edit', duplicate:'Duplicate', del:'Delete', preview:'Preview',
+    customize:'Change the look', newInvoice:'New invoice', optional:'optional',
     navSettings:'My details', navList:'My invoices', navDevis:'Quote request',
-    homeSub:'Create and manage your invoices simply.',
-    start:'Start', options:'Options', credits:'Credits',
-    menuTitle:'What would you like to do?',
-    optTitle:'Options', optLang:'Interface language', optTheme:'Interface colours',
-    optLight:'Light', optInvert:'Inverted',
-    optThemeH:'The inverted theme only affects the app: the printed invoice stays on light paper.',
-    creditsTitle:'Credits & legal notices',
-    a1:'Create an invoice', a1d:'A few simple questions, and it\'s ready.',
-    a2:'Edit an invoice', a2d:'Reopen, duplicate or import an invoice.',
-    a3:'Quote request', a3d:'Collect a client request and turn it into an invoice.',
-    s1:'You', s2:'Client', s3:'Invoice', s4:'Services', s5:'Design', s6:'Done',
+    homeSub:'Make your invoices in five minutes. No jargon, no account, no headache.',
+    start:'Let\'s go', options:'Settings', credits:'Info', share:'Share',
+    menuTitle:'What do you want to do?',
+    optTitle:'Settings', optLang:'App language', optTheme:'App colours',
+    optLight:'Light', optInvert:'Night',
+    optThemeH:'Night mode only changes the app. The invoice stays on a light background: it is a document meant to be printed.',
+    creditsTitle:'Info & legal notices',
+    a1:'Make an invoice', a1d:'Five simple questions, and the PDF pops out.',
+    a2:'Reopen an invoice', a2d:'Edit it, duplicate it, or import one.',
+    a3:'Quote request', a3d:'The form your clients fill in for you.',
+    s1:'You', s2:'Client', s3:'Invoice', s4:'Work', s5:'Look', s6:'Done',
     stepOf:(n) => 'Step ' + n + ' of ' + STEPS.length,
-    q6:'What should it look like?',
-    h6:'Swipe to compare the templates, then pick your colours. The preview updates instantly.',
-    swipeHint:'Swipe →', chosen:'Selected template',
-    q1:'Who are you?', h1:'These details are saved: you only enter them once.',
-    q2:'Who is this invoice for?', h2:'Pick the type of client — the fields adapt.',
-    q3:'The invoice', h3:'The number is suggested automatically and must follow a continuous sequence.',
-    q4:'What did you do?', h4:'Write freely what you did, then the quantity and the price.',
-    q5:'All done!', h5:'One last check, then you can generate the PDF.',
-    fLogo:'Your logo', fLogoH:'It appears directly on the invoice.', fChoose:'Choose an image', fRemove:'Remove',
-    fName:'Business name', fManager:'Owner\'s full name', fLegal:'Legal form',
+    q1:'Who are you?', h1:'We ask once. After that it is kept for every invoice.',
+    q2:'And who is the client?', h2:'Tell us if it is a person or a company — the fields adapt.',
+    q3:'Invoice details', h3:'The number is already filled in. It just has to run in order: 001, 002, 003…',
+    q4:'What did you do?', h4:'Write it the way you would say it. E.g. "Cleaning, 3-room flat", "Logo + business card".',
+    q5:'All good!', h5:'A quick check, and your PDF is ready.',
+    q6:'What should it look like?', h6:'Swipe to compare. What you see is your real invoice, in miniature.',
+    swipeHint:'Swipe →', chosen:'Selected',
+    fLogo:'Your logo', fLogoH:'It goes straight onto the invoice. No logo? Your name does the job.',
+    fChoose:'Choose an image', fRemove:'Remove',
+    fName:'Your business name', fManager:'Your full name', fLegal:'Legal form',
     fCapital:'Share capital (€)', fAddress:'Address', fZip:'Postcode', fCity:'City', fCountry:'Country',
-    fCountryOther:'Country name', fPhone:'Phone', fEmail:'Email',
-    fSiret:'SIRET (company reg.)', fRci:'RCI number', fNis:'NIS number (optional)', fVatNo:'EU VAT number',
-    vatTitle:'Your VAT situation', vatNo:'I do not charge VAT', vatNoD:'Small business exemption — art. 293 B FTC',
-    vatYes:'I charge VAT', vatYesD:'VAT-registered business',
-    bank:'Bank details (optional)', extra:'Additional notices (optional)',
-    fInsurance:'Professional insurance', fInsuranceArea:'Geographical coverage',
-    fCga:'I am a member of an approved management association',
-    typeP:'Individual', typePd:'A person, at home', typeC:'Business', typeCd:'Company, agency, property manager…',
-    clNameP:'Client\'s full name', clNameC:'Company name', clContact:'Contact name',
-    clSiren:'Company number', clVat:'EU VAT number',
-    invNumber:'Invoice number', invLang:'Document language', invIssue:'Issue date',
-    invService:'Service date', invDue:'Due date', onReceipt:'On receipt', days:'days',
-    invObject:'Subject / reference',
-    presta:'Service', qty:'Quantity', unit:'Unit price', vat:'VAT', total:'Total',
-    whichRate:'Which rate?', addItem:'Add a service', detailPh:'Detail (optional): rooms, duration, address…',
-    prestaPh:'E.g. Post-construction cleaning', totalHt:'Total excl. VAT', totalTtc:'Total incl. VAT', toPay:'Total due',
-    verif:'Check', payment:'Payment', payMethod:'Payment method',
-    payTerms:'Specific terms (optional)', penalty:'Late payment penalty rate',
-    message:'Message for the client (optional)', worksAddr:'Address of the dwelling concerned by the works',
-    yourInvoice:'Your invoice', genPdf:'Generate the PDF', print:'Print', saveFile:'Save as a file',
-    noVatLine:'VAT not applicable — art. 293 B FTC',
-    listEmpty:'No invoice yet', listEmptyD:'Your saved invoices will appear here.',
-    listFirst:'Create my first invoice',
-    thNo:'No.', thClient:'Client', thDate:'Date', thAmount:'Amount', thStatus:'Status',
+    fCountryOther:'Which one?', fPhone:'Phone', fEmail:'Email',
+    fSiret:'SIRET (14 digits)', fRci:'RCI number', fNis:'NIS number (if you have one)', fVatNo:'VAT number (FR…)',
+    vatTitle:'Do you charge VAT?', vatNo:'No, never', vatNoD:'Small-business exemption — art. 293 B',
+    vatYes:'Yes', vatYesD:'VAT-registered business',
+    bank:'Bank details (if you want to be paid by transfer)',
+    extra:'Extra bits (optional)',
+    fInsurance:'Professional insurance', fInsuranceArea:'Area covered',
+    fCga:'I belong to an approved management association',
+    typeP:'A person', typePd:'An individual, at home', typeC:'A company', typeCd:'Business, agency, manager…',
+    clNameP:'Their full name', clNameC:'Company name', clContact:'Who you are writing to',
+    clSiren:'Company number', clVat:'VAT number',
+    invNumber:'Invoice number', invLang:'Document language', invIssue:'Today\'s date',
+    invService:'Date of the work', invDue:'Pay before', onReceipt:'Right away', days:'days',
+    invObject:'What is it for?',
+    presta:'What you did', qty:'How many', unit:'Unit price', vat:'VAT', total:'Total',
+    whichRate:'Help me', addItem:'Add a line',
+    detailPh:'A detail if you like: rooms, duration, address…',
+    prestaPh:'E.g. Cleaning, 3-room flat',
+    totalHt:'Total before VAT', totalTtc:'Total to pay (VAT included)', toPay:'Total to pay',
+    verif:'Quick check', payment:'Payment', payMethod:'How do they pay you?',
+    payTerms:'A word about payment (optional)', penalty:'Late payment penalties',
+    message:'A little note for them (optional)', worksAddr:'Address of the dwelling',
+    yourInvoice:'Your invoice', genPdf:'Make the PDF', print:'Print', saveFile:'Save as a file',
+    noVatLine:'No VAT — art. 293 B',
+    listEmpty:'Nothing here yet', listEmptyD:'Your invoices will show up here.',
+    listFirst:'Make my first invoice',
+    thNo:'No.', thClient:'Client', thDate:'Date', thAmount:'Amount', thStatus:'Where it stands',
     stDraft:'Draft', stSent:'Sent', stPaid:'Paid',
-    dataTitle:'Data stored on this device',
-    dataText:'Everything is kept in your browser: nothing is sent online. Export regularly to keep a copy.',
-    exportAll:'Export all my data', eraseAll:'Erase everything',
-    openTitle:'Edit an invoice', openHelp:'Three ways to reopen an existing invoice.',
-    open1:'An invoice already created here', open1d:'The simplest: it reopens with all its details.',
+    dataTitle:'Your data, on your device',
+    dataText:'Everything stays in your browser: nothing goes online, nobody else can read it. The flip side: clear your browser and it is gone. Export now and then.',
+    exportAll:'Export everything', eraseAll:'Erase everything',
+    openTitle:'Reopen an invoice', openHelp:'Three ways to get it back.',
+    open1:'An invoice made here', open1d:'The easiest: it reopens as it was.',
     open1b:'See my invoices',
-    open2:'A file saved from the app', open2d:'The .json file created by "Save as a file", or a quote request received from a client.',
-    open2b:'Import a .json file',
-    open3:'An invoice received as PDF or photo', open3d:'The document is shown next to the form; PDF text is analysed to prefill the fields.',
+    open2:'A .json file', open2d:'The one from "Save as a file", or a quote request sent by a client.',
+    open2b:'Choose a file',
+    open3:'An invoice as PDF or photo', open3d:'The document shows next to the form. If the PDF has real text, we try to read it for you.',
     dropHere:'Drop your invoice here', dropTypes:'PDF, JPG, JPEG or PNG',
-    importGo:'Continue and complete the invoice',
-    importNoInvent:'Nothing missing is invented: undetected fields stay empty.',
+    importGo:'Continue and fill in',
+    importNoInvent:'Nothing is invented: whatever was not found stays empty.',
     dTitle:'Quote request',
-    dHelp:'To be filled in by the client, or with them. The request is then downloaded, printed or emailed — with no account to create.',
+    dHelp:'Send this form to your clients, or fill it in with them on the phone. No account needed, for anyone.',
     dRef:'Reference', dId:'Request no.', dDate:'Date', dYou:'Your details', dName:'Full name',
-    dPlace:'Where the work takes place', dKind:'Type of place',
-    dServices:'Services needed',
-    dPick:'Pick one or more services: the following questions adapt to them.',
-    dNoPick:'Select at least one service to continue.',
-    dAbout:'A few details',
+    dPlace:'Where does it happen?', dKind:'What kind of place?',
+    dServices:'What do you need?',
+    dPick:'Tick everything that applies. The next questions adapt to your choices.',
+    dNoPick:'Tick at least one service above and the right questions will appear.',
+    dAbout:'Tell us a bit more',
     dOld2Help:'This question is only used to know whether a reduced VAT rate may apply to the works.',
-    dRemote:'Remote work: no on-site address is requested.',
-    dSurface:'Approximate area (m²)', dRooms:'Number of rooms',
-    dFreq:'Frequency', dWhen:'Preferred date', dNotes:'Details', dNotesPh:'Describe what you need…',
-    dPhotos:'Photos (optional)', dPhotosH:'They are resized and stored in the request file. They cannot be attached to an automatic email.',
-    dAddPhotos:'Add photos', dSend:'Send my request', dTo:'Recipient email address',
-    dMail:'Open my email app', dJson:'Download (.json)', dCopy:'Copy the text',
-    dTicket:'View the sheet', dToInvoice:'Turn into an invoice',
-    dLocal:'Nothing is sent online automatically: the request is produced on your device, then sent the way you choose.',
-    famHome:'Cleaning & housekeeping', famBuild:'Building & trades',
-    famCreative:'Creative & communication', famPro:'Consulting & services',
-    kindFlat:'Flat', kindHouse:'House', kindOffice:'Office / commercial', kindOther:'Other',
-    freqOnce:'One time', freqWeek:'Every week', freqBi:'Twice a month', freqMonth:'Every month',
-    ticketTitle:'Request sheet', ticketHelp:'You can save it as a PDF or print it.',
+    dRemote:'Remote work: no address needed.',
+    dSurface:'Area in m²', dRooms:'Number of rooms',
+    dFreq:'How often', dWhen:'A date that suits you', dNotes:'Anything else?',
+    dNotesPh:'Tell us: what you want, what is stuck, what already exists…',
+    dPhotos:'Photos? (optional)',
+    dPhotosH:'A photo beats a long explanation. They are resized and kept inside the request file — they do not travel in the automatic email.',
+    dAddPhotos:'Add photos', dSend:'Send your request', dTo:'To which email address?',
+    dMail:'Open my email app', dJson:'Download the file', dCopy:'Copy the text',
+    dTicket:'See the sheet', dToInvoice:'Turn it into an invoice',
+    dLocal:'Nothing goes online by itself. The request is built on your device, and you send it however you like.',
+    famHome:'Cleaning & upkeep', famBuild:'Building & trades',
+    famCreative:'Creative & comms', famPro:'Consulting & services',
+    kindFlat:'A flat', kindHouse:'A house', kindOffice:'A workplace', kindOther:'Something else',
+    freqOnce:'Just once', freqWeek:'Every week', freqBi:'Twice a month', freqMonth:'Every month',
+    ticketTitle:'The request sheet', ticketHelp:'You can print it or save it as a PDF.',
     savePdf:'Save as PDF',
-    missTitle:'A few details are missing',
-    missHelp:'You can still generate the PDF, but the invoice would be incomplete.',
-    missFix:'Complete', missAnyway:'Generate anyway',
-    eraseTitle:'Erase everything?', eraseHelp:'Your details and saved invoices on this device will be permanently deleted.',
-    eraseYes:'Yes, erase everything',
+    missTitle:'A couple of things are missing',
+    missHelp:'You can still make the PDF, but the invoice would be incomplete.',
+    missFix:'I\'ll fill them in', missAnyway:'Never mind, go ahead',
+    eraseTitle:'Erase everything?', eraseHelp:'Your details and saved invoices on this device go for good. No undo.',
+    eraseYes:'Yes, erase it all',
     vatHelpTitle:'Which VAT rate?',
-    vatHelpIntro:'Answer simply. The app <b>suggests</b> a rate: you remain free to change it.',
-    vatConds:'Conditions to confirm', vatProposed:'Suggested rate', vatApply:'Apply',
-    vatDisclaimer:'This suggestion does not replace advice from your accountant or the tax authority.',
-    custTitle:'Customise my invoice', custHelp:'Changes appear immediately in the preview.',
-    custPrimary:'Primary colour', custSecondary:'Secondary colour', custLight:'Lightness',
-    custPalettes:'Palettes', custStyle:'Invoice style', custLogo:'Logo position',
+    vatHelpIntro:'Take your time. The app <b>suggests</b> a rate, you stay free to change it.',
+    vatConds:'Tick what is true', vatProposed:'Suggested rate', vatApply:'I\'ll take it',
+    vatDisclaimer:'This suggestion does not replace advice from an accountant or the tax authority.',
+    custTitle:'Change the look', custHelp:'Everything updates live.',
+    custPrimary:'Main colour', custSecondary:'Second colour', custLight:'Lighter / darker',
+    custPalettes:'Ready-made palettes', custStyle:'Template', custLogo:'Where does the logo go?',
     styleClean:'Clean', styleBand:'Band', styleLine:'Rule',
-    posLeft:'Left', posCenter:'Centre', posRight:'Right',
-    footLocal:'Fully local app — your data stays on your device.',
-    tSaved:'Invoice saved', tInfoSaved:'Details saved', tCopied:'Details copied',
-    tLogo:'Logo added', tDeleted:'Invoice deleted', tImported:'File imported',
-    tDevisDl:'Request downloaded', tNeedMail:'Enter the recipient email address',
-    tConverted:'Request converted — add the prices', tOpened:'Invoice opened', tDuplicated:'Invoice duplicated'
+    posLeft:'Left', posCenter:'Middle', posRight:'Right',
+    footLocal:'Everything stays on your device. Nothing is sent anywhere.',
+    shareTitle:'Pass Factura on',
+    shareHelp:'It is free and it will stay free. If it helped, share the link.',
+    shareNative:'Share…', shareCopy:'Copy the link',
+    shareInsta:'Instagram', shareInstaH:'Instagram does not allow sharing from a website. Copy the link and drop it in your story.',
+    tSaved:'Invoice saved', tInfoSaved:'Your details are saved', tCopied:'Copied!',
+    tLogo:'Nice logo', tDeleted:'Invoice deleted', tImported:'File imported',
+    tDevisDl:'Request downloaded', tNeedMail:'I need an email address',
+    tConverted:'There you go, an invoice. Just the prices left.', tOpened:'Invoice opened', tDuplicated:'Invoice duplicated'
   }
 };
+
 const t = k => { const d = UI[state.ui] || UI.fr; return d[k] !== undefined ? d[k] : (UI.fr[k] !== undefined ? UI.fr[k] : k); };
 
 /* ============ 3. RÈGLES FISCALES & TEXTES DU DOCUMENT ============ */
@@ -907,7 +977,10 @@ function renderChrome(){
     '<div class="home-secondary">' +
       '<button class="btn ghost sm" id="btn-options">' + icon('gear') + ' ' + t('options') + '</button>' +
       '<button class="btn ghost sm" data-go="credits">' + icon('info') + ' ' + t('credits') + '</button>' +
+      '<button class="btn ghost sm" id="btn-share2">' + icon('share') + ' ' + t('share') + '</button>' +
     '</div>';
+  $('#home-bird').innerHTML = pigeon('laptop', 'pigeon-hero');
+  $('#fab').innerHTML = icon('share') + '<span>' + t('share') + '</span>';
   $('#site-foot').innerHTML =
     '<img class="foot-logo" id="foot-logo" data-img="logo" alt="Factura">' +
     '<div class="line"><span class="v">v' + APP_VERSION + '</span>' +
@@ -940,9 +1013,9 @@ function creditsHTML(){
       'Contact: <a href="' + INSTAGRAM + '" target="_blank" rel="noopener">@atelier.nardella</a>.</p>') +
     B('Scope', '<p>Factura helps produce invoice documents. It is <b>not</b> legal, tax or accounting advice. ' +
       'The user remains responsible for the content of the invoices issued, for the VAT rates applied and for keeping records.</p>') +
-    B('Personal data', '<p>No account, no server, no cookie, no analytics. Everything you type stays in your browser ' +
-      '(localStorage) on your device. The publisher never receives your data and cannot recover it. ' +
-      'Export your files regularly to keep a backup.</p>') +
+    B('Personal data', '<p>No account, no server, no cookie, no analytics. Everything typed in stays in the user\'s ' +
+      'browser (local storage), on their own device. The publisher receives no data and can neither read nor restore it. ' +
+      'Regular exports are strongly advised.</p>') +
     B('Typefaces', '<p><b>Space Grotesk</b> (Florian Karsten) and <b>Space Mono</b> (Colophon Foundry), ' +
       'both under the SIL Open Font License 1.1, served by Google Fonts.</p>') +
     B('Open-source libraries', '<ul>' +
@@ -951,7 +1024,9 @@ function creditsHTML(){
       '<li>pdf.js — Mozilla, Apache 2.0 licence (loaded only when reading a PDF)</li></ul>') +
     B('Illustrations & identity', '<p>The Factura logo and the pigeon illustrations are © Atelier Nardella. All rights reserved.</p>') +
     B('Tax sources', '<p>service-public.gouv.fr, impots.gouv.fr (BOFiP), economie.gouv.fr and monentreprise.gouv.mc, ' +
-      'checked in September 2026. Rates and mandatory notices change: check them again each year.</p>') +
+      'checked in September 2026. Rates and mandatory notices change: an annual review is necessary.</p>') +
+    B('Hosting', '<p>The site is hosted on GitHub Pages — GitHub Inc., 88 Colin P. Kelly Jr. Street, ' +
+      'San Francisco, CA 94107, USA. Address: <a href="' + SHARE_URL + '">' + SHARE_URL + '</a>.</p>') +
     B('Version', '<p>Factura v' + APP_VERSION + '.</p>')
   );
   return (
@@ -961,9 +1036,9 @@ function creditsHTML(){
       'un conseil juridique, fiscal ou comptable. L\'utilisateur reste seul responsable du contenu des factures ' +
       'qu\'il émet, des taux de TVA appliqués et de la conservation de ses documents.</p>') +
     B('Données personnelles', '<p>Aucun compte, aucun serveur, aucun cookie, aucune mesure d\'audience. ' +
-      'Tout ce que vous saisissez reste dans votre navigateur (localStorage), sur votre appareil. ' +
-      'L\'éditeur ne reçoit jamais vos données et ne peut pas les récupérer. Exportez régulièrement vos fichiers ' +
-      'pour en conserver une copie.</p>') +
+      'Tout ce qui est saisi reste dans le navigateur de l\'utilisateur (stockage local), sur son appareil. ' +
+      'L\'éditeur ne reçoit aucune donnée et ne peut donc ni la consulter, ni la restaurer. ' +
+      'Une exportation régulière des fichiers est vivement conseillée.</p>') +
     B('Polices de caractères', '<p><b>Space Grotesk</b> (Florian Karsten) et <b>Space Mono</b> (Colophon Foundry), ' +
       'toutes deux sous licence SIL Open Font License 1.1, servies par Google Fonts.</p>') +
     B('Bibliothèques libres', '<ul>' +
@@ -973,8 +1048,10 @@ function creditsHTML(){
     B('Illustrations & identité', '<p>Le logo Factura et les illustrations de pigeons sont © Atelier Nardella. ' +
       'Tous droits réservés.</p>') +
     B('Sources fiscales', '<p>service-public.gouv.fr, impots.gouv.fr (BOFiP), economie.gouv.fr et ' +
-      'monentreprise.gouv.mc, consultés en septembre 2026. Les taux et mentions obligatoires évoluent : ' +
-      'vérifiez-les chaque année.</p>') +
+      'monentreprise.gouv.mc, consultés en septembre 2026. Les taux et les mentions obligatoires évoluent : ' +
+      'une vérification annuelle est nécessaire.</p>') +
+    B('Hébergement', '<p>Le site est hébergé par GitHub Pages — GitHub Inc., 88 Colin P. Kelly Jr. Street, ' +
+      'San Francisco, CA 94107, États-Unis. Adresse du site : <a href="' + SHARE_URL + '">' + SHARE_URL + '</a>.</p>') +
     B('Version', '<p>Factura v' + APP_VERSION + '.</p>')
   );
 }
@@ -982,11 +1059,34 @@ function renderCredits(){
   $('#credits-body').innerHTML =
     '<div class="step-head">' + icon('info', 'lg') + '<h2 class="step-title">' + t('creditsTitle') + '</h2></div>' +
     '<div class="card" style="margin-top:14px">' + creditsHTML() + '</div>' +
+    '<button class="btn ghost" id="btn-share2" style="margin-top:16px">' + icon('share') + ' ' + t('share') + '</button>' +
     pigeon('zen', 'pigeon-small');
   paintImgs();
 }
 function applyTheme(){
   document.documentElement.dataset.theme = state.theme === 'invert' ? 'invert' : 'light';
+}
+function openShare(){
+  const u = encodeURIComponent(SHARE_URL);
+  const txt = encodeURIComponent(state.ui === 'en'
+    ? 'Factura — a free invoicing tool for freelancers, nothing to install:'
+    : 'Factura — un outil de facturation gratuit pour les indépendants, rien à installer :');
+  const link = (ic, label, href) => '<a class="share-opt" href="' + href + '" target="_blank" rel="noopener">' +
+    icon(ic) + '<span>' + label + '</span></a>';
+  openModal('<h3>' + t('shareTitle') + '</h3>' +
+    '<p class="muted small" style="margin-bottom:14px">' + t('shareHelp') + '</p>' +
+    '<div class="share-url" id="share-url">' + SHARE_URL + '</div>' +
+    '<div class="share-grid">' +
+      (navigator.share ? '<button class="share-opt" id="share-native">' + icon('share') + '<span>' + t('shareNative') + '</span></button>' : '') +
+      '<button class="share-opt" id="share-copy">' + icon('link') + '<span>' + t('shareCopy') + '</span></button>' +
+      link('x', 'X', 'https://twitter.com/intent/tweet?text=' + txt + '&url=' + u) +
+      link('whatsapp', 'WhatsApp', 'https://wa.me/?text=' + txt + '%20' + u) +
+      link('facebook', 'Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + u) +
+      link('linkedin', 'LinkedIn', 'https://www.linkedin.com/sharing/share-offsite/?url=' + u) +
+      link('mail', 'E-mail', 'mailto:?subject=Factura&body=' + txt + '%20' + u) +
+      '<button class="share-opt" id="share-insta">' + icon('instagram') + '<span>Instagram</span></button>' +
+    '</div>' +
+    '<button class="btn wide" style="margin-top:16px" data-close="1">' + t('close') + '</button>');
 }
 function openOptions(){
   openModal('<h3>' + t('optTitle') + '</h3>' +
@@ -1010,6 +1110,7 @@ function show(screen){
   const el = $('#scr-' + screen); if(el) el.classList.add('on');
   window.scrollTo(0, 0);
   const fl = $('#foot-logo'); if(fl) fl.style.display = (screen === 'home') ? 'none' : 'block';
+  const fab = $('#fab'); if(fab) fab.style.display = (screen === 'build' || screen === 'home') ? 'none' : 'flex';
   if(screen === 'menu') renderMenu();
   if(screen === 'credits') renderCredits();
   if(screen === 'list') renderList();
@@ -1043,46 +1144,48 @@ function areaHTML(label, path, ph){
 }
 const noteHTML = (ic, html, warn) => '<div class="note' + (warn ? ' warn' : '') + '">' + icon(ic) + '<span>' + html + '</span></div>';
 
+/* Encadrés d'information. Dès qu'il est question de droit ou d'impôts,
+   on reste impersonnel et factuel : pas de tutoiement, pas d'approximation. */
 const NOTES = {
   franchise:() => state.ui === 'en'
-    ? 'Under the French small-business exemption, no VAT appears on your invoices and the notice <b>"VAT not applicable, art. 293 B"</b> is added automatically. 2026 thresholds: <b>€37,500</b> (services) and €85,000 (goods).'
-    : 'En franchise en base, aucune TVA n\'apparaît sur vos factures et la mention <b>« TVA non applicable, art. 293 B du CGI »</b> est ajoutée automatiquement.<br>Seuils 2026 : <b>37 500 €</b> (services) et 85 000 € (ventes), seuils majorés 41 250 € et 93 500 €. <i>Source : service-public.gouv.fr</i>',
+    ? 'No VAT appears on the invoice, and the notice <b>"VAT not applicable, art. 293 B"</b> is added automatically. 2026 thresholds: <b>€37,500</b> for services, €85,000 for goods (tolerance up to €41,250 and €93,500).'
+    : 'Aucune TVA n\'apparaît sur la facture, et la mention <b>« TVA non applicable, art. 293 B du CGI »</b> est ajoutée automatiquement.<br>Seuils 2026 : <b>37 500 €</b> de chiffre d\'affaires pour les services, 85 000 € pour les ventes (tolérance jusqu\'à 41 250 € et 93 500 €). <i>Source : service-public.gouv.fr</i>',
   assujetti:() => state.ui === 'en'
-    ? 'You will choose the VAT rate for each service, with guided help.'
-    : 'Vous choisirez le taux de TVA prestation par prestation, avec une aide au choix.',
+    ? 'The VAT rate is then chosen line by line, with a short guided help.'
+    : 'Le taux de TVA se choisit ensuite ligne par ligne, avec une petite aide au choix.',
   artisan:() => state.ui === 'en'
-    ? 'For a craft activity in France, professional insurance and its geographical coverage must appear on the invoice <i>(Code de l\'artisanat, art. L132-1 and R132-1)</i>.'
-    : 'Pour une activité artisanale, l\'assurance professionnelle et sa couverture géographique doivent figurer sur la facture <i>(Code de l\'artisanat, art. L132-1 et R132-1)</i>.',
+    ? 'For a craft activity in France, the professional insurance and the area it covers must appear on the invoice <i>(Code de l\'artisanat, art. L132-1 and R132-1)</i>.'
+    : 'Pour une activité artisanale, l\'assurance professionnelle et la zone qu\'elle couvre doivent figurer sur la facture <i>(Code de l\'artisanat, art. L132-1 et R132-1)</i>.',
   monaco:() => state.ui === 'en'
-    ? 'Monaco applies French VAT on the same basis and at the same rates (Franco-Monegasque convention of 18 May 1963); VAT numbers carry the FR prefix. Invoice notices come from the Code des taxes sur le chiffre d\'affaires (art. A-153 bis) and ministerial order no. 67-319 of 28 December 1967: the RCI number, legal form and share capital must appear; the NIS number is optional. The €40 recovery indemnity of the French Commercial Code is not applied automatically here.'
+    ? 'Monaco applies French VAT on the same basis and at the same rates (Franco-Monegasque convention of 18 May 1963); VAT numbers carry the FR prefix. Invoice notices come from the Code des taxes sur le chiffre d\'affaires (art. A-153 bis) and ministerial order no. 67-319 of 28 December 1967: the RCI number, the legal form and the share capital must appear; the NIS number is optional. The €40 recovery indemnity of the French Commercial Code is not added automatically.'
     : 'Monaco applique la TVA française sur les mêmes bases et aux mêmes taux (convention franco-monégasque du 18 mai 1963) ; les numéros de TVA portent le préfixe FR. Les mentions de facture relèvent du Code des taxes sur le chiffre d\'affaires (art. A-153 bis) et de l\'arrêté ministériel n° 67-319 du 28 décembre 1967 : le n° RCI, la forme juridique et le capital social doivent figurer sur la facture ; le n° NIS reste facultatif. L\'indemnité forfaitaire de 40 € du Code de commerce français n\'est pas ajoutée automatiquement.',
   otherCountry:() => state.ui === 'en'
-    ? 'Outside France and Monaco, the app no longer adds country-specific legal notices: check what your country requires and add it in the "Specific terms" field.'
-    : 'Hors de France et de Monaco, l\'application n\'ajoute plus de mentions légales propres au pays : vérifiez ce qu\'exige votre pays et complétez le champ « Conditions particulières ».',
+    ? 'Outside France and Monaco, no country-specific legal notice is added. Check what applies locally and add it in the "A word about payment" field.'
+    : 'Hors de France et de Monaco, aucune mention légale propre au pays n\'est ajoutée. Vérifiez ce qui s\'applique sur place et complétez le champ « Un mot sur le paiement ».',
   clientPro:() => state.ui === 'en'
-    ? 'For a business client, the invoice automatically adds the late-payment penalties' + (isFrance() ? ' and the mandatory €40 recovery indemnity.' : '.')
-    : 'Pour un client professionnel, la facture ajoute automatiquement les <b>pénalités de retard</b>' + (isFrance() ? ' et l\'<b>indemnité forfaitaire de 40 €</b>, obligatoires.' : '.'),
+    ? 'Between businesses, late-payment penalties' + (isFrance() ? ' and the €40 fixed recovery indemnity are mandatory: they are added automatically.' : ' are added automatically when the field is filled in.')
+    : 'Entre professionnels, les <b>pénalités de retard</b>' + (isFrance() ? ' et l\'<b>indemnité forfaitaire de 40 €</b> sont obligatoires : elles sont ajoutées automatiquement.' : ' sont ajoutées automatiquement dès que le champ est rempli.'),
   efact:() => state.ui === 'en'
-    ? 'Since <b>1 September 2026</b>, all French businesses must be able to <b>receive</b> electronic invoices. The obligation to <b>issue</b> them reaches small businesses on 1 September 2027. <i>Source: service-public.gouv.fr</i>'
-    : 'Depuis le <b>1<sup>er</sup> septembre 2026</b>, toutes les entreprises françaises doivent pouvoir <b>recevoir</b> des factures électroniques. L\'obligation d\'en <b>émettre</b> s\'appliquera aux TPE/PME au 1<sup>er</sup> septembre 2027. <i>Source : service-public.gouv.fr</i>',
+    ? 'Since <b>1 September 2026</b>, every French business must be able to <b>receive</b> electronic invoices. The obligation to <b>issue</b> them reaches small businesses on 1 September 2027. <i>Source: service-public.gouv.fr</i>'
+    : 'Depuis le <b>1<sup>er</sup> septembre 2026</b>, toutes les entreprises françaises doivent pouvoir <b>recevoir</b> des factures électroniques. L\'obligation d\'en <b>émettre</b> arrivera pour les TPE et PME le 1<sup>er</sup> septembre 2027. <i>Source : service-public.gouv.fr</i>',
   clientPart:() => state.ui === 'en'
-    ? 'For an individual client, penalties between businesses and the €40 indemnity do not apply: they are not added.'
-    : 'Pour un particulier, les pénalités entre professionnels et l\'indemnité de 40 € ne s\'appliquent pas : elles ne sont pas ajoutées.',
+    ? 'For an individual client, the penalties and the €40 indemnity between businesses do not apply: they are left out.'
+    : 'Pour un client particulier, les pénalités et l\'indemnité de 40 € entre professionnels ne s\'appliquent pas : elles ne sont pas ajoutées.',
   serviceDate:() => state.ui === 'en'
-    ? 'The <b>service date</b> is only useful if it differs from the issue date. Leave it empty otherwise.'
-    : 'La <b>date de prestation</b> n\'est utile que si elle diffère de la date d\'émission. Laissez vide sinon.',
+    ? 'The <b>date of the work</b> is only useful when it differs from today\'s date. Leave it empty otherwise.'
+    : 'La <b>date du boulot</b> ne sert que si elle est différente de la date d\'aujourd\'hui. Sinon, on laisse vide.',
   itemsFranchise:() => state.ui === 'en'
-    ? 'You are VAT-exempt: no rate to choose, the prices you type are the final prices.'
-    : 'Vous êtes en <b>franchise en base</b> : pas de TVA à choisir, les prix saisis sont les prix finaux.',
+    ? 'No VAT to pick here: the prices typed in are the final prices.'
+    : 'Pas de TVA à choisir ici : les prix saisis sont les prix finaux.',
   itemsVat:() => state.ui === 'en'
-    ? 'The VAT rate depends on your situation and on the exact nature of the work. <b>Check the suggested rate before validating.</b> When in doubt, 20% is the default rate.'
-    : 'Le taux de TVA dépend de votre situation et de la nature exacte des travaux. <b>Vérifiez le taux proposé avant de valider.</b> En cas de doute, 20 % est le taux par défaut.',
+    ? 'The VAT rate depends on the situation and on the exact nature of the work. <b>Check the suggested rate before validating.</b> When in doubt, 20% is the default rate.'
+    : 'Le taux de TVA dépend de la situation et de la nature exacte des travaux. <b>Vérifiez le taux proposé avant de valider.</b> Dans le doute, 20 % est le taux par défaut.',
   cert:() => state.ui === 'en'
-    ? 'A reduced rate is used: the invoice shows the certification the client must <b>date and sign</b>. It replaces the Cerfa 1300-SD / 1301-SD form withdrawn in 2025. Keep a copy.'
-    : 'Un taux réduit est utilisé : la facture affiche la mention de certification que le client doit <b>dater et signer</b>. Elle remplace l\'attestation Cerfa 1300-SD / 1301-SD supprimée en 2025. Conservez-en une copie.',
+    ? 'A reduced rate is used: the invoice carries the certification the client must <b>date and sign</b>. It replaces the Cerfa 1300-SD / 1301-SD form withdrawn in 2025, and a copy has to be kept.'
+    : 'Un taux réduit est utilisé : la facture porte la mention de certification que le client doit <b>dater et signer</b>. Elle remplace l\'attestation Cerfa 1300-SD / 1301-SD supprimée en 2025, et une copie doit être conservée.',
   checkVat:() => state.ui === 'en'
-    ? 'Check the VAT rate of each service before generating the invoice: your business is liable in case of error.'
-    : 'Vérifiez le taux de TVA de chaque prestation avant de générer la facture : c\'est votre entreprise qui est redevable en cas d\'erreur.'
+    ? 'Check the VAT rate of each line before making the invoice: the business issuing it is liable in case of error.'
+    : 'Vérifiez le taux de TVA de chaque ligne avant de sortir la facture : en cas d\'erreur, c\'est l\'entreprise qui émet qui est redevable.'
 };
 
 const LEGAL_FORMS = () => isMonaco()
@@ -1815,6 +1918,13 @@ document.addEventListener('click', e => {
   }
   if(t0.dataset.theme){ state.theme = t0.dataset.theme; LS.set('theme', state.theme); applyTheme(); openOptions(); return; }
   if(t0.id === 'btn-options'){ openOptions(); return; }
+  if(t0.id === 'fab' || t0.id === 'btn-share2'){ openShare(); return; }
+  if(t0.id === 'share-copy'){ copyText(SHARE_URL); return; }
+  if(t0.id === 'share-insta'){ copyText(SHARE_URL); toast(t('shareInstaH')); return; }
+  if(t0.id === 'share-native'){
+    navigator.share({ title:'Factura', text:t('homeSub'), url:SHARE_URL }).catch(() => {});
+    return;
+  }
   if(t0.id === 'btn-customize2'){ openCustomize(); return; }
   if(t0.dataset.style){
     state.style[t0.dataset.style] = t0.dataset.val; saveStyle(); renderSheet();
@@ -1990,7 +2100,7 @@ $('#modal').addEventListener('click', e => { if(e.target.id === 'modal') closeMo
 window.addEventListener('resize', () => { fitSheet(); fitRail(); });
 
 (function init(){
-  applyTheme();
+  applyTheme(); initEyes();
   state.invoice = blankInvoice();
   renderChrome(); renderStepChips(); renderSheet();
   const h = (location.hash || '').replace('#', '');

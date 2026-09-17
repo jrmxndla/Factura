@@ -474,7 +474,7 @@ input[type=range]{width:100%;accent-color:var(--brand)}
 [data-theme="invert"] .mini{background:#0C0E4C;border-color:var(--line)}
 [data-theme="invert"] .logo-factura-invert{filter:brightness(0) invert(1)}
 /* logo et pigeons en trait clair sur fond sombre */
-[data-theme="invert"] .pigeon,[data-theme="invert"] .topbar .logo,
+[data-theme="invert"] .pigeon-wrap,[data-theme="invert"] .topbar .logo,
 [data-theme="invert"] .home-logo,[data-theme="invert"] .foot-logo{filter:brightness(0) invert(1);opacity:.92}
 [data-theme="invert"] .logo-prev img,[data-theme="invert"] .sheet img{filter:none}
 
@@ -602,4 +602,34 @@ body{overflow-x:clip}
 @media (max-width:400px){
   .tpl-rail{padding:2px 19vw 12px;scroll-padding:0 19vw}
   .tpl-slide{flex:0 0 62vw}
+}
+
+
+/* ============ 24. PIGEONS : REGARD ============ */
+.pigeon-wrap{position:relative;display:block;pointer-events:none;user-select:none}
+.pigeon-wrap>img{display:block;width:100%;height:auto}
+.eye{position:absolute;aspect-ratio:1;border-radius:50%;background:#0016C8;
+  transform:translate(calc(-50% + var(--ex,0px)), calc(-50% + var(--ey,0px)));
+  transition:transform .18s cubic-bezier(.2,.9,.3,1)}
+
+/* ============ 25. BULLE DE PARTAGE ============ */
+.fab{position:fixed;right:18px;bottom:18px;z-index:70;display:none;align-items:center;gap:8px;
+  padding:13px 18px;border:0;border-radius:999px;cursor:pointer;font-family:var(--sans);
+  font-size:14px;font-weight:600;background:var(--brand);color:var(--card);
+  box-shadow:0 10px 26px -10px rgba(24,0,255,.7);transition:transform .16s}
+.fab:hover{transform:translateY(-2px)}
+.fab .ico{width:18px;height:18px;color:currentColor}
+[data-theme="invert"] .fab{color:#0C0E4C}
+.share-url{font-size:13px;word-break:break-all;background:var(--card-2);border:1px dashed var(--line-2);
+  border-radius:10px;padding:10px 12px;margin-bottom:14px;color:var(--ink-soft);text-align:center}
+.share-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.share-opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  padding:14px 8px;border-radius:13px;border:1.5px solid var(--line-2);background:var(--card);
+  cursor:pointer;font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none}
+.share-opt:hover{border-color:var(--brand);background:var(--tint);text-decoration:none}
+.share-opt .ico{width:24px;height:24px}
+@media (max-width:720px){
+  .fab{right:14px;bottom:14px;padding:12px 15px;font-size:13px}
+  .share-grid{grid-template-columns:repeat(3,1fr);gap:7px}
+  .share-opt{font-size:11.5px;padding:12px 4px}
 }
