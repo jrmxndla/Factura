@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factura — outil pour les indépendants</title>
+<meta name="description" content="Créez, modifiez et exportez vos factures simplement. Outil gratuit, 100 % local, par Atelier Nardella.">
+<link rel="icon" href="assets/logo-factura.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<!-- html2pdf.js : génération du PDF dans le navigateur, aucune donnée n'est envoyée -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<div class="halo a"></div><div class="halo b"></div><div class="grain"></div>
+
+<div id="app">
+
+<!-- ============ ACCUEIL ============ -->
+<section class="screen on" id="scr-home">
+  <div class="home">
+    <img class="home-logo" data-img="logo" alt="Factura — outil pour les indépendants">
+    <p class="sub" id="home-sub"></p>
+    <div id="home-actions"></div>
+    <img class="pigeon pigeon-hero" data-img="laptop" alt="">
+  </div>
+</section>
+
+<!-- ============ MENU ============ -->
+<section class="screen" id="scr-menu">
+  <header class="topbar" id="tb-menu"></header>
+  <div style="max-width:620px;margin:0 auto;padding:30px 20px 60px" class="page-center" id="menu-body"></div>
+</section>
+
+<!-- ============ CRÉDITS & MENTIONS ============ -->
+<section class="screen" id="scr-credits">
+  <header class="topbar" id="tb-credits"></header>
+  <div style="max-width:760px;margin:0 auto;padding:30px 20px 60px" class="page-center" id="credits-body"></div>
+</section>
+
+<!-- ============ ATELIER ============ -->
+<section class="screen" id="scr-build">
+  <header class="topbar" id="tb-build"></header>
+  <div class="workspace">
+    <div class="form-col page-center" id="form-col"></div>
+    <aside class="preview-col" id="preview-col">
+      <div class="preview-head" id="preview-head"></div>
+      <div class="preview-stage" id="stage">
+        <div class="sheet-scaler" id="scaler"><div class="sheet" id="sheet"></div></div>
+      </div>
+    </aside>
+  </div>
+  <div class="stepnav">
+    <button class="btn ghost" id="btn-prev"></button>
+    <span class="spacer"></span>
+    <button class="btn" id="btn-next"></button>
+  </div>
+</section>
+
+<!-- ============ MES FACTURES ============ -->
+<section class="screen" id="scr-list">
+  <header class="topbar" id="tb-list"></header>
+  <div style="max-width:1000px;margin:0 auto;padding:30px 20px 60px">
+    <div class="card"><div id="list-body"></div></div>
+  </div>
+</section>
+
+<!-- ============ MES INFORMATIONS ============ -->
+<section class="screen" id="scr-settings">
+  <header class="topbar" id="tb-settings"></header>
+  <div style="max-width:780px;margin:0 auto;padding:30px 20px 60px" id="settings-body"></div>
+</section>
+
+<!-- ============ MODIFIER / IMPORTER ============ -->
+<section class="screen" id="scr-open">
+  <header class="topbar" id="tb-open"></header>
+  <div style="max-width:960px;margin:0 auto;padding:30px 20px 60px" class="page-center" id="open-body"></div>
+</section>
+
+<!-- ============ DEMANDE DE DEVIS ============ -->
+<section class="screen" id="scr-devis">
+  <header class="topbar" id="tb-devis"></header>
+  <div style="max-width:820px;margin:0 auto;padding:30px 20px 60px" class="page-center" id="devis-body"></div>
+</section>
+
+<footer class="site-foot" id="site-foot"></footer>
+
+</div>
+
+<div class="modal" id="modal"><div class="modal-box" id="modal-box"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="file-logo" accept="image/*" hidden>
+<input type="file" id="file-doc" accept=".pdf,.jpg,.jpeg,.png" hidden>
+<input type="file" id="file-json" accept=".json" hidden>
+<input type="file" id="file-photos" accept="image/*" multiple hidden>
+
+<script src="app.js"></script>
+</body>
+</html>
