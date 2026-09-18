@@ -21,7 +21,7 @@
    ================================================================= */
 
 /* ============ 1. VERSION, ICÔNES, IMAGES ============ */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 const INSTAGRAM = 'https://www.instagram.com/atelier.nardella/';
 const SHARE_URL = 'https://jrmxndla.github.io/Factura/';
 const ASSETS = {
@@ -37,11 +37,11 @@ const paintImgs = () => $$('[data-img]').forEach(el => { el.src = ASSETS[el.data
    largeur de l'image : [x, y, rayon]. */
 const EYES = {
   coffee:[[0.5286, 0.4134, 0.0155], [0.6393, 0.3867, 0.0143]],
-  laptop:[[0.4298, 0.3774, 0.0179], [0.6690, 0.3689, 0.0190]],
-  plant: [[0.5393, 0.5962, 0.0190], [0.6583, 0.5788, 0.0179]],
-  zen:   [[0.5357, 0.4549, 0.0167], [0.6440, 0.4531, 0.0167]],
-  paint: [[0.4667, 0.5133, 0.0167], [0.5702, 0.4929, 0.0155]],
-  camera:[[0.5107, 0.5956, 0.0202], [0.6214, 0.5700, 0.0179]]
+  paint: [[0.4298, 0.3774, 0.0179], [0.5238, 0.3483, 0.0155]],
+  camera:[[0.5393, 0.5962, 0.0190], [0.6583, 0.5788, 0.0179]],
+  laptop:[[0.5357, 0.4549, 0.0167], [0.6440, 0.4531, 0.0167]],
+  plant: [[0.4667, 0.5133, 0.0167], [0.5702, 0.4929, 0.0155]],
+  zen:   [[0.5107, 0.5956, 0.0202], [0.6214, 0.5700, 0.0179]]
 };
 const pigeon = (name, cls) => '<span class="pigeon-wrap ' + (cls || 'pigeon-step') + '">' +
   '<img class="pigeon" data-img="' + name + '" alt="">' +
@@ -153,6 +153,8 @@ const UI = {
     menuTitle:'Tu veux faire quoi ?',
     optTitle:'Réglages', optLang:'Langue de l\'appli', optTheme:'Couleurs de l\'appli',
     optLight:'Clair', optInvert:'Nuit',
+    optHaptic:'Vibrations au toucher', optOn:'Oui', optOff:'Non',
+    optHapticH:'Une petite vibration quand tu sélectionnes quelque chose. Ça ne marche que sur Android : iOS ne le permet pas depuis un site web.',
     optThemeH:'Le mode nuit ne change que l\'application. La facture, elle, reste sur fond clair : c\'est un document à imprimer.',
     creditsTitle:'Infos & mentions légales',
     a1:'Faire une facture', a1d:'Cinq questions simples, et le PDF sort tout seul.',
@@ -270,6 +272,8 @@ const UI = {
     menuTitle:'What do you want to do?',
     optTitle:'Settings', optLang:'App language', optTheme:'App colours',
     optLight:'Light', optInvert:'Night',
+    optHaptic:'Touch vibration', optOn:'On', optOff:'Off',
+    optHapticH:'A short buzz when you select something. Android only: iOS does not allow it from a website.',
     optThemeH:'Night mode only changes the app. The invoice stays on a light background: it is a document meant to be printed.',
     creditsTitle:'Info & legal notices',
     a1:'Make an invoice', a1d:'Five simple questions, and the PDF pops out.',
@@ -457,7 +461,7 @@ const STEPS = [
   { key:'you',    labelKey:'s1', icon:'person',   bird:'coffee' },
   { key:'client', labelKey:'s2', icon:'house',    bird:'plant' },
   { key:'info',   labelKey:'s3', icon:'calendar', bird:'laptop' },
-  { key:'items',  labelKey:'s4', icon:'broom',    bird:'paint' },
+  { key:'items',  labelKey:'s4', icon:'broom',    bird:'camera' },
   { key:'design', labelKey:'s5', icon:'palette',  bird:'paint' },
   { key:'done',   labelKey:'s6', icon:'check',    bird:'zen' }
 ];
@@ -577,6 +581,7 @@ const blankDevis = () => ({ id:nextNumber('DEV', 'seqDev'), date:iso(new Date())
 let state = {
   ui: LS.get('ui', (navigator.language || 'fr').slice(0, 2) === 'en' ? 'en' : 'fr'),
   theme: LS.get('theme', 'light'),
+  haptic: LS.get('haptic', 1),
   step:0,
   company: Object.assign(blankCompany(), LS.get('company', {})),
   client: blankClient(),
@@ -622,9 +627,15 @@ function fdate(s, lang){
 }
 const getPath = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
 function setPath(o, p, v){ const k = p.split('.'); const last = k.pop(); k.reduce((a, x) => a[x], o)[last] = v; }
+/* Vibration courte à la sélection. Fonctionne sur Android ; iOS n'implémente
+   pas l'API Vibration, la fonction ne fait alors rien. */
+function buzz(pattern){
+  if(!state.haptic || !navigator.vibrate) return;
+  try{ navigator.vibrate(pattern); }catch(e){}
+}
 let toastT;
 function toast(msg){
-  const el = $('#toast'); el.textContent = msg; el.classList.add('on');
+  const el = $('#toast'); el.textContent = msg; el.classList.add('on'); buzz(10);
   clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2800);
 }
 const openModal = html => { $('#modal-box').innerHTML = html; $('#modal').classList.add('on'); };
@@ -1101,6 +1112,11 @@ function openOptions(){
       '<button data-theme="invert" class="' + (state.theme === 'invert' ? 'on' : '') + '">' + t('optInvert') + '</button>' +
     '</div>' +
     noteHTML('info', t('optThemeH')) +
+    (navigator.vibrate ? '<div class="sec-title">' + t('optHaptic') + '</div>' +
+      '<div class="choice">' +
+        '<button data-haptic="1" class="' + (state.haptic ? 'on' : '') + '">' + t('optOn') + '</button>' +
+        '<button data-haptic="0" class="' + (state.haptic ? '' : 'on') + '">' + t('optOff') + '</button>' +
+      '</div>' + noteHTML('info', t('optHapticH')) : '') +
     '<button class="btn wide" data-close="1">' + t('close') + '</button>');
 }
 
@@ -1590,7 +1606,7 @@ function elementToPDF(el, filename){
     jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
     pagebreak:{ mode:['css', 'legacy'] }
   }).from(clone).save()
-    .then(() => { document.body.removeChild(holder); toast(filename); })
+    .then(() => { document.body.removeChild(holder); buzz([14, 60, 26]); toast(filename); })
     .catch(() => { document.body.removeChild(holder); window.print(); });
 }
 function exportPDF(){
@@ -1899,6 +1915,7 @@ function startNew(){
   show('build');
 }
 function goStep(i){
+  buzz(8);
   state.step = Math.max(0, Math.min(STEPS.length - 1, i));
   renderStep(); window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -1912,9 +1929,14 @@ document.addEventListener('click', e => {
   if(t0.dataset.close){ closeModal(); return; }
   if(t0.dataset.step !== undefined){ goStep(parseInt(t0.dataset.step, 10)); return; }
   if(t0.dataset.set){
+    buzz(10);
     setPath(state, t0.dataset.set, t0.dataset.val);
     if(t0.dataset.set.indexOf('company.') === 0) saveCompany();
     renderStep(); renderSettings0(); return;
+  }
+  if(t0.dataset.haptic !== undefined){
+    state.haptic = t0.dataset.haptic === '1' ? 1 : 0;
+    LS.set('haptic', state.haptic); buzz(18); openOptions(); return;
   }
   if(t0.dataset.theme){ state.theme = t0.dataset.theme; LS.set('theme', state.theme); applyTheme(); openOptions(); return; }
   if(t0.id === 'btn-options'){ openOptions(); return; }
@@ -1927,7 +1949,7 @@ document.addEventListener('click', e => {
   }
   if(t0.id === 'btn-customize2'){ openCustomize(); return; }
   if(t0.dataset.style){
-    state.style[t0.dataset.style] = t0.dataset.val; saveStyle(); renderSheet();
+    state.style[t0.dataset.style] = t0.dataset.val; saveStyle(); buzz(10); renderSheet();
     if($('#modal').classList.contains('on')) openCustomize();
     else if(STEPS[state.step].key === 'design'){
       $$('.tpl-slide').forEach(el => el.classList.toggle('on', el.dataset.val === state.style.template));
@@ -1947,7 +1969,7 @@ document.addEventListener('click', e => {
     return;
   }
   if(t0.dataset.pal !== undefined){
-    const pal = PALETTES[parseInt(t0.dataset.pal, 10)];
+    const pal = PALETTES[parseInt(t0.dataset.pal, 10)]; buzz(10);
     state.style.primary = pal.p; state.style.secondary = pal.s; saveStyle(); renderSheet();
     if($('#modal').classList.contains('on')) openCustomize(); else renderStep();
     return;
@@ -2000,7 +2022,7 @@ document.addEventListener('click', e => {
   if(t0.dataset.svc){
     const id = t0.dataset.svc, i = state.devis.services.indexOf(id);
     if(i >= 0) state.devis.services.splice(i, 1); else state.devis.services.push(id);
-    saveDevis(); t0.classList.toggle('on'); renderDevisDetails(); return;
+    saveDevis(); buzz(12); t0.classList.toggle('on'); renderDevisDetails(); return;
   }
   if(t0.dataset.photoDel !== undefined){ state.devis.photos.splice(parseInt(t0.dataset.photoDel, 10), 1); saveDevis(); renderPhotos(); return; }
   if(t0.id === 'btn-photos'){ $('#file-photos').click(); return; }
